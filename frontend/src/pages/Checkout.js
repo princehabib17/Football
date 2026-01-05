@@ -5,7 +5,12 @@ import { Elements, CardElement, useStripe, useElements } from '@stripe/react-str
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
+const STRIPE_KEY = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder';
+
+// Check if we're in demo mode (invalid Stripe key)
+const IS_DEMO_MODE = STRIPE_KEY === 'pk_test_placeholder' || STRIPE_KEY.includes('get_from_stripe');
+
+const stripePromise = IS_DEMO_MODE ? null : loadStripe(STRIPE_KEY);
 
 const CheckoutForm = () => {
   const stripe = useStripe();
@@ -38,7 +43,6 @@ const CheckoutForm = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!stripe || !elements || !game) return;
 
     // Validate guest info
     if (!customerName || !customerEmail || !customerPhone) {
@@ -46,11 +50,44 @@ const CheckoutForm = () => {
       return;
     }
 
+    // Demo mode - bypass Stripe entirely
+    if (IS_DEMO_MODE) {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const { data } = await axios.post(`${API_URL}/api/payment/create-payment-intent`, {
+          gameId: id,
+          numberOfPlayers,
+          customerName,
+          customerEmail,
+          customerPhone,
+          isGuest,
+        });
+
+        const { bookingId } = data;
+
+        await axios.post(`${API_URL}/api/payment/confirm-payment`, {
+          paymentIntentId: `pi_demo_${Date.now()}`,
+          bookingId,
+        });
+
+        navigate(`/confirmation/${bookingId}`);
+      } catch (err) {
+        console.error('Payment error:', err);
+        setError(err.response?.data?.error || 'Payment failed. Please try again.');
+        setLoading(false);
+      }
+      return;
+    }
+
+    // Real payment mode
+    if (!stripe || !elements || !game) return;
+
     setLoading(true);
     setError(null);
 
     try {
-      // Step 1: Create payment intent on backend
       const { data } = await axios.post(`${API_URL}/api/payment/create-payment-intent`, {
         gameId: id,
         numberOfPlayers,
@@ -62,7 +99,6 @@ const CheckoutForm = () => {
 
       const { clientSecret, bookingId } = data;
 
-      // Step 2: Confirm payment with Stripe
       const cardElement = elements.getElement(CardElement);
       const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -81,13 +117,11 @@ const CheckoutForm = () => {
         return;
       }
 
-      // Step 3: Confirm payment on backend
       await axios.post(`${API_URL}/api/payment/confirm-payment`, {
         paymentIntentId: paymentIntent.id,
         bookingId,
       });
 
-      // Success - navigate to confirmation
       navigate(`/confirmation/${bookingId}`);
 
     } catch (err) {
@@ -121,6 +155,19 @@ const CheckoutForm = () => {
 
       <div style={{ backgroundColor: '#fff', borderRadius: 8, padding: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
         <h1 style={{ marginTop: 0 }}>Checkout</h1>
+
+        {IS_DEMO_MODE && (
+          <div style={{
+            padding: 12,
+            marginBottom: 16,
+            backgroundColor: '#fff3cd',
+            color: '#856404',
+            borderRadius: 4,
+            border: '1px solid #ffeeba'
+          }}>
+            <strong>⚠️ DEMO MODE:</strong> Payment will be simulated. Add real Stripe keys to process actual payments.
+          </div>
+        )}
 
         <div style={{ marginBottom: 24, padding: 16, backgroundColor: '#f5f5f5', borderRadius: 4 }}>
           <h3 style={{ marginTop: 0 }}>Booking Summary</h3>
@@ -199,32 +246,48 @@ const CheckoutForm = () => {
             />
           </div>
 
-          <h3>Payment Information</h3>
-          <div style={{
-            marginBottom: 16,
-            padding: 12,
-            border: '1px solid #ccc',
-            borderRadius: 4
-          }}>
-            <CardElement options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
+          {!IS_DEMO_MODE ? (
+            <>
+              <h3>Payment Information</h3>
+              <div style={{
+                marginBottom: 16,
+                padding: 12,
+                border: '1px solid #ccc',
+                borderRadius: 4
+              }}>
+                <CardElement options={{
+                  style: {
+                    base: {
+                      fontSize: '16px',
+                      color: '#424770',
+                      '::placeholder': {
+                        color: '#aab7c4',
+                      },
+                    },
+                    invalid: {
+                      color: '#9e2146',
+                    },
                   },
-                },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            }} />
-          </div>
+                }} />
+              </div>
 
-          <p style={{ fontSize: 12, color: '#666', marginBottom: 16 }}>
-            Supports Philippine payment methods: Credit/Debit Cards, GCash, GrabPay, PayMaya
-          </p>
+              <p style={{ fontSize: 12, color: '#666', marginBottom: 16 }}>
+                Supports Philippine payment methods: Credit/Debit Cards, GCash, GrabPay, PayMaya
+              </p>
+            </>
+          ) : (
+            <div style={{
+              marginBottom: 16,
+              padding: 16,
+              backgroundColor: '#f5f5f5',
+              borderRadius: 4,
+              textAlign: 'center'
+            }}>
+              <p style={{ margin: 0, color: '#666' }}>
+                💳 Payment will be automatically approved in demo mode
+              </p>
+            </div>
+          )}
 
           {error && (
             <div style={{
@@ -241,24 +304,24 @@ const CheckoutForm = () => {
 
           <button
             type="submit"
-            disabled={!stripe || loading}
+            disabled={(!IS_DEMO_MODE && !stripe) || loading}
             style={{
               width: '100%',
               padding: 16,
-              backgroundColor: !stripe || loading ? '#ccc' : '#4CAF50',
+              backgroundColor: ((!IS_DEMO_MODE && !stripe) || loading) ? '#ccc' : '#4CAF50',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
               fontSize: 18,
               fontWeight: 'bold',
-              cursor: !stripe || loading ? 'not-allowed' : 'pointer',
+              cursor: ((!IS_DEMO_MODE && !stripe) || loading) ? 'not-allowed' : 'pointer',
             }}
           >
-            {loading ? 'Processing...' : `Pay ₱${totalPrice.toLocaleString()}`}
+            {loading ? 'Processing...' : IS_DEMO_MODE ? `Complete Booking (Demo) - ₱${totalPrice.toLocaleString()}` : `Pay ₱${totalPrice.toLocaleString()}`}
           </button>
 
           <p style={{ fontSize: 12, color: '#666', marginTop: 12, textAlign: 'center' }}>
-            Checkout as guest - no account required
+            ✓ Checkout as guest - no account required
           </p>
         </form>
       </div>
@@ -266,10 +329,17 @@ const CheckoutForm = () => {
   );
 };
 
-const Checkout = () => (
-  <Elements stripe={stripePromise}>
-    <CheckoutForm />
-  </Elements>
-);
+const Checkout = () => {
+  if (IS_DEMO_MODE) {
+    // In demo mode, don't load Stripe at all
+    return <CheckoutForm />;
+  }
+
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm />
+    </Elements>
+  );
+};
 
 export default Checkout;

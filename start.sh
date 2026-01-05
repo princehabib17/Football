@@ -16,7 +16,7 @@ sleep 2
 # Start frontend
 echo "⚛️  Starting frontend..."
 cd /home/user/Football/frontend
-BROWSER=none PORT=3000 npm start > /tmp/frontend.log 2>&1 &
+BROWSER=none PORT=3000 npx react-scripts start > /tmp/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "✅ Frontend started (PID: $FRONTEND_PID) on http://localhost:3000"
 
