@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '../config/api';
 
 const Confirmation = () => {
   const { id } = useParams(); // booking ID
@@ -12,7 +12,7 @@ const Confirmation = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/bookings/${id}`)
+    axios.get(`${API_BASE_URL}/api/bookings/${id}`)
       .then(response => {
         setBooking(response.data.booking);
         setLoading(false);

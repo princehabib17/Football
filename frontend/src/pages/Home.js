@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '../config/api';
 
 const Home = () => {
   const [games, setGames] = useState([]);
@@ -11,7 +11,7 @@ const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/games?status=open`)
+    axios.get(`${API_BASE_URL}/api/games?status=open`)
       .then(response => {
         setGames(response.data.games || []);
         setLoading(false);

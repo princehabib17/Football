@@ -4,7 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+import { API_BASE_URL } from '../config/api';
 const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY || 'pk_test_placeholder');
 
 const CheckoutForm = () => {
@@ -26,7 +26,7 @@ const CheckoutForm = () => {
   const [isGuest, setIsGuest] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/games/${id}`)
+    axios.get(`${API_BASE_URL}/api/games/${id}`)
       .then(response => {
         setGame(response.data.game);
       })
@@ -51,7 +51,7 @@ const CheckoutForm = () => {
 
     try {
       // Step 1: Create payment intent on backend
-      const { data } = await axios.post(`${API_URL}/api/payment/create-payment-intent`, {
+      const { data } = await axios.post(`${API_BASE_URL}/api/payment/create-payment-intent`, {
         gameId: id,
         numberOfPlayers,
         customerName,
@@ -82,7 +82,7 @@ const CheckoutForm = () => {
       }
 
       // Step 3: Confirm payment on backend
-      await axios.post(`${API_URL}/api/payment/confirm-payment`, {
+      await axios.post(`${API_BASE_URL}/api/payment/confirm-payment`, {
         paymentIntentId: paymentIntent.id,
         bookingId,
       });
