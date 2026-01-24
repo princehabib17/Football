@@ -3,10 +3,25 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Game = require('../models/Game');
 const logger = require('../config/logger');
+const mongoose = require('mongoose');
+const { mockGames } = require('../middleware/mockData');
 
 // Get all games
 router.get('/', async (req, res) => {
   try {
+    // Use mock data if MongoDB not connected
+    if (mongoose.connection.readyState !== 1) {
+      logger.info('Returning mock games data (MongoDB not connected)');
+      const { status } = req.query;
+      let games = [...mockGames];
+
+      if (status) {
+        games = games.filter(game => game.status === status);
+      }
+
+      return res.json({ games });
+    }
+
     const { status, date } = req.query;
     const filter = {};
 
@@ -33,6 +48,18 @@ router.get('/', async (req, res) => {
 // Get single game by ID
 router.get('/:id', async (req, res) => {
   try {
+    // Use mock data if MongoDB not connected
+    if (mongoose.connection.readyState !== 1) {
+      logger.info('Returning mock game data (MongoDB not connected)');
+      const game = mockGames.find(g => g._id === req.params.id);
+
+      if (!game) {
+        return res.status(404).json({ error: 'Game not found' });
+      }
+
+      return res.json({ game });
+    }
+
     const game = await Game.findById(req.params.id);
 
     if (!game) {
