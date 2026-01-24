@@ -7,7 +7,29 @@ const Payment = require('../models/Payment');
 const Game = require('../models/Game');
 const logger = require('../config/logger');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+let stripe = null;
+
+if (stripeSecretKey) {
+  try {
+    stripe = Stripe(stripeSecretKey);
+  } catch (error) {
+    logger.error('Stripe initialization failed:', error);
+  }
+} else {
+  logger.warn('Stripe secret key is not set. Payment routes will be disabled.');
+}
+
+const ensureStripeConfigured = (res) => {
+  if (!stripe) {
+    res.status(503).json({
+      error: 'Payments are temporarily unavailable',
+      message: 'Stripe is not configured. Set STRIPE_SECRET_KEY to enable payments.'
+    });
+    return false;
+  }
+  return true;
+};
 
 // Create payment intent for Philippines (supports PHP, GCash, GrabPay, etc.)
 router.post('/create-payment-intent',
@@ -21,6 +43,10 @@ router.post('/create-payment-intent',
   ],
   async (req, res) => {
     try {
+      if (!ensureStripeConfigured(res)) {
+        return;
+      }
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -126,6 +152,10 @@ router.post('/confirm-payment',
   ],
   async (req, res) => {
     try {
+      if (!ensureStripeConfigured(res)) {
+        return;
+      }
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
@@ -190,6 +220,9 @@ router.post('/confirm-payment',
 
 // Webhook for Stripe events (for production)
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+  if (!ensureStripeConfigured(res)) {
+    return;
+  }
   const sig = req.headers['stripe-signature'];
   let event;
 
