@@ -61,7 +61,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/kickslot'
   })
   .catch((error) => {
     logger.error('MongoDB connection error:', error);
-    process.exit(1);
+    logger.warn('Server will continue running without database. Install MongoDB to enable full functionality.');
   });
 
 // Health check endpoint
@@ -111,7 +111,10 @@ app.listen(PORT, () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
   logger.error('Unhandled Promise Rejection:', err);
-  process.exit(1);
+  // Don't exit if it's a MongoDB connection error - server can run without DB
+  if (err.name !== 'MongooseServerSelectionError') {
+    process.exit(1);
+  }
 });
 
 // Handle uncaught exceptions
