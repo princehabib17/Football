@@ -7,7 +7,19 @@ const Payment = require('../models/Payment');
 const Game = require('../models/Game');
 const logger = require('../config/logger');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? Stripe(stripeSecretKey) : null;
+
+const ensureStripeConfigured = (res) => {
+  if (!stripe) {
+    res.status(503).json({
+      error: 'Stripe is not configured',
+      message: 'Set STRIPE_SECRET_KEY to enable payments.'
+    });
+    return false;
+  }
+  return true;
+};
 
 // Create payment intent for Philippines (supports PHP, GCash, GrabPay, etc.)
 router.post('/create-payment-intent',
@@ -24,6 +36,10 @@ router.post('/create-payment-intent',
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
+      }
+
+      if (!ensureStripeConfigured(res)) {
+        return;
       }
 
       const { gameId, numberOfPlayers, customerEmail, customerName, customerPhone, isGuest, userId } = req.body;
@@ -70,7 +86,7 @@ router.post('/create-payment-intent',
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCentavos,
         currency: 'php',
-        payment_method_types: ['card', 'paymaya', 'gcash', 'grab_pay'],
+        payment_method_types: ['card', 'paymaya', 'gcash', 'grabpay'],
         receipt_email: customerEmail,
         metadata: {
           bookingId: booking._id.toString(),
@@ -131,6 +147,10 @@ router.post('/confirm-payment',
         return res.status(400).json({ errors: errors.array() });
       }
 
+      if (!ensureStripeConfigured(res)) {
+        return;
+      }
+
       const { paymentIntentId, bookingId } = req.body;
 
       // Retrieve payment intent from Stripe
@@ -189,7 +209,15 @@ router.post('/confirm-payment',
 );
 
 // Webhook for Stripe events (for production)
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
+  if (!stripe) {
+    logger.error('Stripe webhook received but Stripe is not configured');
+    return res.status(503).send('Stripe is not configured');
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    logger.error('Stripe webhook secret is not configured');
+    return res.status(500).send('Stripe webhook is not configured');
+  }
   const sig = req.headers['stripe-signature'];
   let event;
 
