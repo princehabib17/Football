@@ -70,7 +70,7 @@ router.post('/create-payment-intent',
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCentavos,
         currency: 'php',
-        payment_method_types: ['card', 'paymaya', 'gcash', 'grab_pay'],
+        payment_method_types: ['card', 'paymaya', 'gcash', 'grabpay'],
         receipt_email: customerEmail,
         metadata: {
           bookingId: booking._id.toString(),
@@ -189,7 +189,7 @@ router.post('/confirm-payment',
 );
 
 // Webhook for Stripe events (for production)
-router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+router.post('/webhook', async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 

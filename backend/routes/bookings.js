@@ -61,12 +61,14 @@ router.post('/:id/cancel', async (req, res) => {
       return res.status(400).json({ error: 'Booking is already cancelled' });
     }
 
+    const wasConfirmed = booking.status === 'confirmed';
+
     // Update booking status
     booking.status = 'cancelled';
     await booking.save();
 
     // Update game player count if booking was confirmed
-    if (booking.status === 'confirmed') {
+    if (wasConfirmed) {
       const Game = require('../models/Game');
       const game = await Game.findById(booking.game);
       if (game) {
