@@ -4,8 +4,32 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
+/* ---------- detail row ---------- */
+const DetailRow = ({ label, value, mono, bold, color }) => (
+  <div style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    padding: '10px 0',
+    borderBottom: '1px solid #f0f0f0',
+    gap: 16,
+  }}>
+    <span style={{ fontSize: 14, color: '#5f6368', fontWeight: 500, flexShrink: 0 }}>{label}</span>
+    <span style={{
+      fontSize: bold ? 18 : 14,
+      fontWeight: bold ? 800 : 500,
+      color: color || '#1a1a2e',
+      fontFamily: mono ? "'JetBrains Mono', monospace" : 'inherit',
+      textAlign: 'right',
+      wordBreak: 'break-all',
+    }}>
+      {value}
+    </span>
+  </div>
+);
+
 const Confirmation = () => {
-  const { id } = useParams(); // booking ID
+  const { id } = useParams();
   const navigate = useNavigate();
   const [booking, setBooking] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -25,23 +49,42 @@ const Confirmation = () => {
   }, [id]);
 
   if (loading) {
-    return <div style={{ padding: 16, textAlign: 'center' }}>Loading...</div>;
+    return (
+      <div style={{
+        padding: '80px 24px',
+        textAlign: 'center',
+      }}>
+        <div style={{
+          width: 40, height: 40,
+          border: '3px solid #e0e0e0',
+          borderTopColor: '#4caf50',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+          margin: '0 auto 16px',
+        }} />
+        <p style={{ color: '#5f6368', fontSize: 15 }}>Loading your booking...</p>
+      </div>
+    );
   }
 
   if (error || !booking) {
     return (
-      <div style={{ padding: 16, textAlign: 'center' }}>
-        <p style={{ color: 'red' }}>{error || 'Booking not found'}</p>
+      <div className="animate-fade-in" style={{ padding: '64px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>&#9888;&#65039;</div>
+        <p style={{ color: '#c62828', fontSize: 16, fontWeight: 500, marginBottom: 20 }}>
+          {error || 'Booking not found'}
+        </p>
         <button
           onClick={() => navigate('/')}
           style={{
-            marginTop: 16,
-            padding: '8px 16px',
-            backgroundColor: '#4CAF50',
+            padding: '12px 28px',
+            background: 'linear-gradient(135deg, #1b5e20, #2e7d32)',
             color: '#fff',
             border: 'none',
-            borderRadius: 4,
-            cursor: 'pointer'
+            borderRadius: 10,
+            fontSize: 15,
+            fontWeight: 600,
+            cursor: 'pointer',
           }}
         >
           Back to Games
@@ -51,125 +94,200 @@ const Confirmation = () => {
   }
 
   return (
-    <div style={{ padding: 16, maxWidth: 600, margin: '0 auto' }}>
+    <div className="animate-fade-in" style={{
+      padding: '32px 24px 48px',
+      maxWidth: 640,
+      margin: '0 auto',
+    }}>
       <div style={{
         backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 32,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        textAlign: 'center'
+        borderRadius: 20,
+        overflow: 'hidden',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+        border: '1px solid rgba(0,0,0,0.04)',
       }}>
+        {/* Success header */}
         <div style={{
-          width: 80,
-          height: 80,
-          margin: '0 auto 16px',
-          backgroundColor: '#4CAF50',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 48
+          background: 'linear-gradient(135deg, #1b5e20 0%, #2e7d32 50%, #43a047 100%)',
+          padding: '40px 32px',
+          textAlign: 'center',
+          color: '#fff',
         }}>
-          ✓
-        </div>
-
-        <h1 style={{ color: '#4CAF50', marginTop: 0 }}>Booking Confirmed!</h1>
-        <p style={{ fontSize: 16, color: '#666' }}>Your spot has been successfully reserved.</p>
-
-        <div style={{
-          marginTop: 32,
-          padding: 24,
-          backgroundColor: '#f5f5f5',
-          borderRadius: 8,
-          textAlign: 'left'
-        }}>
-          <h3 style={{ marginTop: 0 }}>Booking Details</h3>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Booking ID:</strong>
-            <p style={{ margin: '4px 0', color: '#666', fontFamily: 'monospace' }}>{booking._id}</p>
+          {/* Animated checkmark */}
+          <div className="animate-bounce-in" style={{
+            width: 80,
+            height: 80,
+            margin: '0 auto 20px',
+            backgroundColor: 'rgba(255,255,255,0.2)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 40,
+            color: '#ffffff',
+            backdropFilter: 'blur(4px)',
+            border: '2px solid rgba(255,255,255,0.3)',
+          }}>
+            &#10003;
           </div>
 
-          <div style={{ marginBottom: 12 }}>
-            <strong>Game:</strong>
-            <p style={{ margin: '4px 0', color: '#666' }}>{booking.game?.title}</p>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Venue:</strong>
-            <p style={{ margin: '4px 0', color: '#666' }}>{booking.game?.venue}</p>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Date & Time:</strong>
-            <p style={{ margin: '4px 0', color: '#666' }}>
-              {new Date(booking.game?.date).toLocaleDateString()} at {booking.game?.time}
-            </p>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Number of Players:</strong>
-            <p style={{ margin: '4px 0', color: '#666' }}>{booking.numberOfPlayers}</p>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Total Paid:</strong>
-            <p style={{ margin: '4px 0', color: '#2e7d32', fontSize: 18, fontWeight: 'bold' }}>
-              ₱{booking.totalAmount?.toLocaleString()}
-            </p>
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <strong>Status:</strong>
-            <p style={{
-              margin: '4px 0',
-              color: booking.status === 'confirmed' ? '#4CAF50' : '#666',
-              textTransform: 'capitalize'
-            }}>
-              {booking.status}
-            </p>
-          </div>
-
-          {booking.guestInfo && (
-            <div style={{ marginBottom: 12 }}>
-              <strong>Contact:</strong>
-              <p style={{ margin: '4px 0', color: '#666' }}>{booking.guestInfo.name}</p>
-              <p style={{ margin: '4px 0', color: '#666' }}>{booking.guestInfo.email}</p>
-              <p style={{ margin: '4px 0', color: '#666' }}>{booking.guestInfo.phone}</p>
-            </div>
-          )}
-        </div>
-
-        <div style={{
-          marginTop: 24,
-          padding: 16,
-          backgroundColor: '#e3f2fd',
-          borderRadius: 8,
-          border: '1px solid #2196F3'
-        }}>
-          <p style={{ margin: 0, fontSize: 14, color: '#1976D2' }}>
-            <strong>Important:</strong> A confirmation email has been sent to your email address with all the details.
-            Please arrive 10 minutes before the game starts.
+          <h1 style={{
+            margin: '0 0 8px',
+            fontSize: 26,
+            fontWeight: 800,
+            color: '#fff',
+          }}>
+            Booking Confirmed!
+          </h1>
+          <p style={{
+            margin: 0,
+            fontSize: 15,
+            opacity: 0.9,
+          }}>
+            Your spot has been successfully reserved
           </p>
         </div>
 
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            marginTop: 24,
-            width: '100%',
-            padding: 16,
-            backgroundColor: '#4CAF50',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 18,
-            fontWeight: 'bold',
-            cursor: 'pointer'
-          }}
-        >
-          Browse More Games
-        </button>
+        <div style={{ padding: '28px 32px 32px' }}>
+          {/* Booking details card */}
+          <div style={{
+            padding: 24,
+            backgroundColor: '#f8f9fa',
+            borderRadius: 14,
+            border: '1px solid #eee',
+            marginBottom: 24,
+          }}>
+            <h3 style={{
+              marginTop: 0,
+              marginBottom: 16,
+              fontSize: 15,
+              fontWeight: 600,
+              color: '#1a1a2e',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}>
+              <span style={{ fontSize: 17 }}>&#128203;</span>
+              Booking Details
+            </h3>
+
+            <DetailRow label="Booking ID" value={booking._id} mono />
+            <DetailRow label="Game" value={booking.game?.title} />
+            <DetailRow label="Venue" value={booking.game?.venue} />
+            <DetailRow
+              label="Date & Time"
+              value={`${new Date(booking.game?.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })} at ${booking.game?.time}`}
+            />
+            <DetailRow label="Players" value={booking.numberOfPlayers} />
+            <DetailRow
+              label="Total Paid"
+              value={`\u20B1${booking.totalAmount?.toLocaleString()}`}
+              bold
+              color="#1b5e20"
+            />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              paddingTop: 10,
+            }}>
+              <span style={{ fontSize: 14, color: '#5f6368', fontWeight: 500 }}>Status</span>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '4px 12px',
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 600,
+                background: booking.status === 'confirmed' ? '#e8f5e9' : '#f5f5f5',
+                color: booking.status === 'confirmed' ? '#2e7d32' : '#616161',
+                border: booking.status === 'confirmed' ? '1px solid #c8e6c9' : '1px solid #e0e0e0',
+                textTransform: 'capitalize',
+              }}>
+                {booking.status === 'confirmed' && <span style={{ marginRight: 4 }}>&#9989;</span>}
+                {booking.status}
+              </span>
+            </div>
+          </div>
+
+          {/* Guest info */}
+          {booking.guestInfo && (
+            <div style={{
+              padding: 24,
+              backgroundColor: '#f8f9fa',
+              borderRadius: 14,
+              border: '1px solid #eee',
+              marginBottom: 24,
+            }}>
+              <h3 style={{
+                marginTop: 0,
+                marginBottom: 16,
+                fontSize: 15,
+                fontWeight: 600,
+                color: '#1a1a2e',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+              }}>
+                <span style={{ fontSize: 17 }}>&#128100;</span>
+                Contact Information
+              </h3>
+              <DetailRow label="Name" value={booking.guestInfo.name} />
+              <DetailRow label="Email" value={booking.guestInfo.email} />
+              <DetailRow label="Phone" value={booking.guestInfo.phone} />
+            </div>
+          )}
+
+          {/* Important notice */}
+          <div style={{
+            padding: 18,
+            backgroundColor: '#e3f2fd',
+            borderRadius: 12,
+            border: '1px solid #bbdefb',
+            marginBottom: 24,
+            display: 'flex',
+            gap: 12,
+            alignItems: 'flex-start',
+          }}>
+            <span style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>&#8505;&#65039;</span>
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: 14, fontWeight: 600, color: '#1565c0' }}>
+                Important
+              </p>
+              <p style={{ margin: 0, fontSize: 13, color: '#1976d2', lineHeight: 1.6 }}>
+                A confirmation email has been sent with all the details. Please arrive 10 minutes before the game starts.
+              </p>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <button
+            onClick={() => navigate('/')}
+            style={{
+              width: '100%',
+              padding: 18,
+              background: 'linear-gradient(135deg, #1b5e20, #2e7d32)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 14,
+              fontSize: 17,
+              fontWeight: 700,
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              boxShadow: '0 4px 16px rgba(27,94,32,0.3)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.boxShadow = '0 6px 24px rgba(27,94,32,0.4)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(27,94,32,0.3)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            Browse More Games
+          </button>
+        </div>
       </div>
     </div>
   );
