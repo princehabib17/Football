@@ -61,14 +61,17 @@ router.post('/:id/cancel', async (req, res) => {
       return res.status(400).json({ error: 'Booking is already cancelled' });
     }
 
+    // Save original status before changing so we know if we need to update player count
+    const previousStatus = booking.status;
+
     // Update booking status
     booking.status = 'cancelled';
     await booking.save();
 
-    // Update game player count if booking was confirmed
-    if (booking.status === 'confirmed') {
+    // Update game player count if booking was previously confirmed
+    if (previousStatus === 'confirmed') {
       const Game = require('../models/Game');
-      const game = await Game.findById(booking.game);
+      const game = await Game.findById(booking.game._id || booking.game);
       if (game) {
         game.currentPlayers = Math.max(0, game.currentPlayers - booking.numberOfPlayers);
         game.updateStatus();

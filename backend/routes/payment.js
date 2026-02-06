@@ -7,7 +7,16 @@ const Payment = require('../models/Payment');
 const Game = require('../models/Game');
 const logger = require('../config/logger');
 
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+// Initialize Stripe safely - log warning if key is missing
+let stripe;
+try {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    logger.warn('STRIPE_SECRET_KEY is not set. Payment features will not work.');
+  }
+  stripe = Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
+} catch (err) {
+  logger.error('Failed to initialize Stripe:', err.message);
+}
 
 // Create payment intent for Philippines (supports PHP, GCash, GrabPay, etc.)
 router.post('/create-payment-intent',
@@ -159,10 +168,13 @@ router.post('/confirm-payment',
         await booking.save();
 
         // Update game player count
-        const game = await Game.findById(booking.game);
-        game.currentPlayers += booking.numberOfPlayers;
-        game.updateStatus();
-        await game.save();
+        // booking.game is populated, so use its _id to fetch a fresh document for safe update
+        const game = await Game.findById(booking.game._id || booking.game);
+        if (game) {
+          game.currentPlayers += booking.numberOfPlayers;
+          game.updateStatus();
+          await game.save();
+        }
 
         logger.info(`Payment succeeded for booking ${booking._id}`);
 

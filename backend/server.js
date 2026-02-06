@@ -45,7 +45,14 @@ app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
 // Body parser middleware
-app.use(express.json());
+// Skip JSON parsing for Stripe webhook endpoint (needs raw body)
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/payment/webhook') {
+    next();
+  } else {
+    express.json()(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
